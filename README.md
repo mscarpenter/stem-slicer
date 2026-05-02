@@ -128,4 +128,6 @@ spleeter/                   # Deezer's Python reference implementation
 ## Reference
 
 - `spleeter/` — original Python implementation (STFT parameters, mask conventions)
-- `archive/` — MUSDB18 test set for validation (stored externally on Google Drive)
+- `archive/` — MUSDB18 test set for validation (stored on Google Drive, not in repo)
+  - **Google Drive:** https://drive.google.com/drive/folders/1XirPRsEIHEtHDM6VlE23gRoaPnG21oeN?usp=drive_link
+  - Download locally to `archive/` before running end-to-end quality validation
