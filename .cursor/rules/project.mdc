@@ -1,0 +1,96 @@
+---
+description: Contexto e configuração deste projeto. Lido pelo orchestrator para calibrar todos os agents. Gerado pelo /intake a partir do README.md.
+globs:
+alwaysApply: false
+---
+
+# Project: StemSlicer C++
+
+## Propósito
+Aplicação standalone em C++ para separação de fontes de áudio (extração de stems: vocals, drums, bass, other). Destinada a músicos e produtores que precisam de uma alternativa offline e sem Python a ferramentas como Spleeter e Demucs. **Roadmap declarado:** standalone first → migração para formato VST3/AU plugin para integração com DAWs (drag-and-drop de stems na timeline, roteamento direto por trilha).
+
+## Stack
+- **Linguagem**: C++17
+- **Framework principal**: JUCE (audio I/O, GUI, cross-platform)
+- **Inference engine**: ONNX Runtime (ADR-001 — decidido; CUDA EP no Windows, CoreML EP no macOS)
+- **DSP**: Classes próprias para windowing (Hann/Hamming) e buffer management
+- **Banco de dados**: não aplicável
+- **Testes**: unknown — sem suite definida ainda
+- **Infra/Deploy**: standalone desktop (Windows + macOS); sem CI configurado # inferido
+- **Outras dependências relevantes**: ffmpeg/libsndfile para I/O de áudio # inferido a partir do Spleeter; validar
+
+## Arquitetura
+Aplicação JUCE standalone (não plugin). O pipeline central é: leitura de arquivo de áudio → STFT → inferência de modelo (soft masks por stem) → multiplicação de máscara por stem → IFFT → escrita dos arquivos de saída. A referência canônica para parâmetros de STFT e lógica de máscara é o código Python em `spleeter/`. A camada `AudioEngine/` encapsula DSP e inferência; a camada `ML/` abstrai o runtime (TFLite ou ONNX). **Constraint crítico:** a arquitetura deve ser modularizada desde o início para permitir migração para VST3/AU sem reescrita do núcleo — `AudioEngine/` e `ML/` não devem ter dependência direta do host standalone.
+
+## Estrutura de pastas
+```
+Source/
+  Main.cpp              # Entry point
+  AudioEngine/          # STFT/IFFT, pipeline DSP, chamadas de inferência
+  UI/                   # Componentes JUCE customizados
+  ML/                   # Wrappers para TFLite/ONNX
+Models/                 # Arquivos .tflite ou .onnx pré-treinados
+Resources/              # Assets visuais
+spleeter/               # Referência Python (Deezer) — não modificar
+archive/test/           # MUSDB18 test set (.wav por stem) — ground-truth para validação
+```
+
+## Convenções
+- **Naming**: PascalCase para classes, camelCase para métodos e variáveis, UPPER_SNAKE para constantes # inferido
+- **Commits**: não definido
+- **Imports**: JUCE headers via `<juce_*/juce_*.h>`, headers próprios entre `""`
+- **Componentes**: um arquivo .h + .cpp por classe; separar declaração de implementação
+- **Outras**: sem `any` em inferência — tipos explícitos para buffers de áudio (e.g. `juce::AudioBuffer<float>`)
+
+## Domínio
+- **Stem**: faixa de áudio isolada (vocal, drums, bass, other)
+- **STFT**: Short-Time Fourier Transform — converte áudio de domínio de tempo para frequência
+- **IFFT**: Inverse FFT — reconstrói áudio no domínio de tempo a partir das máscaras aplicadas
+- **Soft mask**: tensor de valores 0–1 por stem e por bin de frequência, saída do modelo
+- **Mixture**: a faixa de áudio completa (mix) fornecida como entrada
+- **MUSDB18**: dataset padrão de avaliação para separação de fontes musicais (100 tracks train, 50 test)
+
+## Agents ativos
+- `intake` — sempre ativo
+- `executor` — sempre ativo
+- `planner` — sempre ativo
+- `debugger` — sempre ativo
+- `architect` — ativo: decisão crítica pendente (TFLite vs ONNX Runtime, estrutura do pipeline DSP)
+- `code-reviewer` — ativo: código C++ de performance crítica exige revisão antes de fechar
+- `qa-tester` — ativo quando o pipeline DSP estiver implementado (validar contra MUSDB18)
+- `security-reviewer` — não ativado (aplicação desktop sem rede)
+- `refactorer` — ativo quando código legado ou dívida técnica se acumular
+- `document-specialist` — não ativado (MVP)
+- `git-master` — não ativado (projeto solo)
+
+## Skills ativas
+- `clean` — usar após geração de código C++ para remover padrões genéricos de IA
+- `performance` — usar ao otimizar o pipeline de inferência ou DSP (medir antes de otimizar)
+
+## Comandos do projeto
+```bash
+# Pré-requisito: vcpkg instalado e VCPKG_ROOT definido
+
+# Configurar (Windows — Visual Studio)
+# ATENÇÃO: build dir DEVE ser path sem espaços — bug no CMake do onnxruntime com /external:I
+$cmake = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+& $cmake -S "." -B "C:\build\stemslicer" -DCMAKE_TOOLCHAIN_FILE="C:\vcpkg\scripts\buildsystems\vcpkg.cmake" -G "Visual Studio 17 2022" -A x64
+
+# Configurar (macOS — Xcode)
+cmake -B build -GXcode -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+
+# Build
+cmake --build build --config Release
+
+# Converter modelo Spleeter → ONNX (one-time, requer Python)
+# pip install tf2onnx tensorflow
+# python -m tf2onnx.convert --saved-model pretrained_models/4stems --output Models/spleeter_4stems.onnx --opset 13
+```
+
+## Notas para os agents
+- O pipeline STFT/mask/IFFT já está implementado em Python em `spleeter/audio/`. Antes de implementar `AudioEngine/`, leia `spleeter/spleeter/separator.py` e `spleeter/spleeter/audio/` para alinhar parâmetros (n_fft, hop_length, sample_rate).
+- Os arquivos `.wav` em `archive/test/` são o ground-truth para validar a separação — não são samples de desenvolvimento.
+- Runtime escolhido: **ONNX Runtime** (ADR-001). Implementar `OnnxBackend : InferenceBackend` em `Source/ML/` via `Ort::Session`.
+- Performance é requisito funcional: o objetivo declarado é separação >100x faster than real-time em GPU. Toda mudança no pipeline de inferência deve passar por `/perf`.
+- **VST3 migration path:** `AudioEngine/` e `ML/` devem ser agnósticos ao host. Toda lógica que depende de "ser standalone" (file I/O, progress dialog) fica em `UI/` ou `Main.cpp`, nunca em `AudioEngine/`. Isso é o que permite reutilizar o núcleo num plugin.
+- O README está incompleto (arquivo Python com string aberta). Conteúdo estrutural extraído corresponde ao disponível até a seção "Roadmap & VST3 Compatibility".

@@ -1,0 +1,68 @@
+---
+description: Contexto e configuração deste projeto. Lido pelo orchestrator para calibrar todos os agents. Gerado pelo /intake a partir do README.md.
+globs:
+alwaysApply: false
+---
+
+# Project: [Nome do Projeto]
+
+## Propósito
+[O que faz, para quem, qual problema resolve]
+
+## Stack
+- **Linguagem**: 
+- **Framework principal**: 
+- **Banco de dados**: 
+- **Estilo**: 
+- **Testes**: 
+- **Infra/Deploy**: 
+- **Outras dependências relevantes**: 
+
+## Arquitetura
+[Descreva em 2-4 linhas: estrutura geral, padrões usados, separação de responsabilidades]
+
+## Estrutura de pastas
+```
+[estrutura relevante]
+```
+
+## Convenções
+- **Naming**: 
+- **Commits**: 
+- **Imports**: 
+- **Componentes**: 
+- **Outras**: 
+
+## Domínio
+- **[Termo]**: [definição curta]
+
+## Agents ativos
+- `intake` — sempre ativo
+- `executor` — sempre ativo
+- `planner` — sempre ativo
+- `debugger` — sempre ativo
+- `architect` — 
+- `code-reviewer` — 
+- `qa-tester` — 
+- `security-reviewer` — 
+- `refactorer` — 
+- `document-specialist` — 
+- `git-master` — 
+
+## Skills ativas
+- 
+
+## Comandos do projeto
+```bash
+# dev
+
+
+# build
+
+
+# test
+
+```
+
+## Notas para os agents
+[Instruções específicas que todos os agents devem seguir neste projeto]

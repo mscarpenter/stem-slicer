@@ -1,0 +1,41 @@
+# Build output
+build/
+cmake-build-*/
+out/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+CMakeSettings.json
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# JUCE Projucer
+*.jucer
+
+# Compiled artifacts outside build/
+*.vst3
+*.component
+*.app
+*.exe
+*.dll
+*.lib
+*.a
+*.o
+*.obj
+
+# FetchContent cache (optional — CMake re-fetches if missing)
+# _deps/  ← deixar comentado: alguns times preferem committar

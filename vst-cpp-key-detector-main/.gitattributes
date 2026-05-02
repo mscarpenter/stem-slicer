@@ -1,0 +1,22 @@
+# Normalize line endings: LF no repo, conversão automática no checkout
+* text=auto eol=lf
+
+# Forçar LF em arquivos de código e configuração
+*.cpp    text eol=lf
+*.h      text eol=lf
+*.cmake  text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+*.txt    text eol=lf
+*.gitignore text eol=lf
+CMakeLists.txt text eol=lf
+
+# Binários — nunca converter
+*.png    binary
+*.jpg    binary
+*.ico    binary
+*.dll    binary
+*.lib    binary
+*.a      binary
+*.exe    binary
+*.vst3   binary

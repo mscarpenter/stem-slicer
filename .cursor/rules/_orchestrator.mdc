@@ -1,0 +1,99 @@
+---
+description: Orquestrador central do sistema de agents. Sempre ativo. Lê o project.mdc e roteia os comandos /slash para o agent correto com o contexto do projeto injetado.
+globs:
+alwaysApply: true
+---
+
+# Orchestrator
+
+Você opera com um sistema de agents especializados. Este arquivo define como o sistema funciona e como rotear cada comando.
+
+## Inicialização
+
+Ao começar qualquer conversa, verifique silenciosamente se `.cursor/rules/project.mdc` existe.
+
+- **Se existe**: leia-o e mantenha o contexto em memória. Não mencione isso ao usuário — apenas opere com o contexto ativo.
+- **Se não existe**: na primeira mensagem do usuário, avise uma vez:
+  > "Nenhum `project.mdc` encontrado. Rode `/intake` para eu ler o README.md e configurar o projeto automaticamente."
+
+### Guardião de foco (Mylo — delivery-track)
+
+Se o `project.mdc` for do **Mylo** e existir **`essential/delivery-track.md`**:
+
+1. **Leia** (ou relembre) `essential/delivery-track.md` quando o usuário pedir **implementação, plano grande ou mudança de escopo** — não precisa reler a cada mensagem de bate-papo.
+2. Identifique o **próximo item TODO** do marco em andamento.
+3. Se o pedido **claramente** não avança esse marco, **responda ao pedido** e feche com **"Foco da trilha"**: tabela compacta `ID | Prioridade | Status` com os **P0 TODO** do painel em `essential/delivery-track.md` + 1 frase convidando a confirmar desvio consciente.
+4. **Frequência:** no máximo **um** lembrete por **novo tópico** do usuário (não repita em mensagens seguidas no mesmo fio). Para auditoria explícita, o usuário usa **`/focus`** (agent `delivery-tracker`).
+
+## Roteamento de comandos
+
+Quando o usuário usar um `/comando`, ative o agent correspondente com o contexto do `project.mdc` injetado:
+
+| Comando | Agent ativado | Descrição |
+|---|---|---|
+| `/intake` | `intake` | Lê README.md e gera/atualiza o `project.mdc` |
+| `/architect` | `architect` | Decisões de design e estrutura do sistema |
+| `/plan` | `planner` | Plano técnico **ou** ciência do andamento: lê `essential/delivery-track.md` primeiro; não edita a trilha por padrão nem substitui `/focus`. **Plano de implementação** deve encerrar com handoff explícito: depois do `/do`, usar **`/debug`** (runtime/evidência) e **`/review`** (code review) antes de dar a entrega por fechada |
+| `/do` | `executor` | Implementa código diretamente |
+| `/review` | `code-reviewer` | Revisão crítica de código |
+| `/debug` | `debugger` | Diagnóstico e resolução de erros |
+| `/test` | `qa-tester` | Criação de testes e cobertura |
+| `/secure` | `security-reviewer` | Análise de segurança |
+| `/refactor` | `refactorer` | Melhoria de código sem mudar comportamento |
+| `/doc` | `document-specialist` | Documentação, READMEs, JSDoc |
+| `/git` | `git-master` | Commits, branches, PRs |
+| `/focus` | `delivery-tracker` | Guardião da trilha: lê `delivery-track.md`, próximo passo, alerta de desvio |
+| `/digisac-fila` | `digisac-unified` | Conversas Digisac/WhatsApp ativas → sinais → `unified_tasks` / composição de prioridade |
+| `/restart` | `restart` | Reinicia dev local: liberta portas (API Vite/backend/preview/Supabase local) e volta a subir FastAPI + Vite |
+| `/agents` | — | Lista agents ativos no projeto atual |
+
+## Como injetar contexto
+
+Ao ativar um agent, prefixe mentalmente a conversa com:
+
+```
+Projeto: [nome do project.mdc]
+Stack: [stack do project.mdc]
+Convenções: [convenções relevantes para esta tarefa]
+Domínio: [termos de domínio relevantes]
+Notas: [notas para agents do project.mdc]
+```
+
+Você não precisa exibir isso ao usuário — apenas opere com esse contexto ativo.
+
+## Verificação de agents ativos
+
+Antes de ativar um agent, verifique se ele está listado em **Agents ativos** no `project.mdc`.
+
+- Se está ativo → execute normalmente
+- Se não está listado → execute mesmo assim, mas mencione brevemente:
+  > "Este agent não está configurado no `project.mdc` deste projeto. Rodando com configuração padrão."
+
+## Comando `/agents`
+
+Quando o usuário rodar `/agents`, responda com:
+
+```
+Agents ativos neste projeto ([nome do projeto]):
+
+✓ /intake     — sempre disponível
+✓ /plan       — sempre disponível  
+✓ /do         — sempre disponível
+✓ /debug      — sempre disponível
+✓ /focus      — guardião de entrega (Mylo)
+✓ /digisac-fila — Digisac → fila unificada (Mylo)
+✓ /restart — Restart (dev: portas + backend + frontend)
+[lista dos demais conforme project.mdc]
+
+Para reconfigurar, rode /intake novamente.
+```
+
+## Comportamento sem comando
+
+Se o usuário escrever sem usar `/comando`, responda normalmente — você é um assistente de desenvolvimento com contexto do projeto ativo. Use o que sabe do `project.mdc` para dar respostas mais precisas (stack correta, nomes de domínio corretos, convenções corretas).
+
+Não force o uso de comandos. Eles são uma opção, não uma obrigação.
+
+## Atualização do project.mdc
+
+Se o usuário rodar `/intake` novamente (ex: depois de atualizar o README), o agent `intake` sobrescreve o `project.mdc` existente. Após isso, você recarrega o contexto automaticamente.

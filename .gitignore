@@ -1,0 +1,28 @@
+# Build outputs
+build/
+.cache/
+vcpkg_installed/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+JuceLibraryCode/
+
+# IDE (gerados automaticamente pela IDE, não por você)
+.vs/
+*.user
+*.suo
+*.sdf
+DerivedData/
+
+# MUSDB18 dataset — armazenado no Google Drive (32 GB)
+archive/
+
+# Python cache (gerado automaticamente)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Separation outputs
+output/
+*.stem.wav
